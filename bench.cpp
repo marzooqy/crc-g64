@@ -1,0 +1,53 @@
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+
+#include "crc.h"
+
+uint64_t ten_pow(int8_t n) {
+    uint64_t i = 1;
+
+    while(n-- > 0) {
+        i *= 10;
+    }
+
+    return i;
+}
+
+void bench(uint64_t len, uint64_t n) {
+    unsigned char* buf = (unsigned char*) malloc(len);
+
+    for(uint64_t i = 0; i < len; i++) {
+        buf[i] = i & 0xff;
+    }
+
+    clock_t start = clock();
+
+    for(uint64_t i = 0; i < n; i++) {
+        crc_g64(crc_init, buf, len);
+    }
+
+    clock_t end = clock();
+
+    float speed = (float)(len * n) / ((float)(end - start) / CLOCKS_PER_SEC) / powf(1024, 3);
+
+    printf(" %.2f |", speed);
+
+    free(buf);
+}
+
+int main() {
+    printf("|");
+
+    bench(ten_pow(2), ten_pow(6));
+    bench(ten_pow(3), ten_pow(5));
+    bench(ten_pow(4), ten_pow(4));
+    bench(ten_pow(5), ten_pow(3));
+    bench(ten_pow(6), ten_pow(2));
+    bench(ten_pow(7), ten_pow(1));
+    bench(ten_pow(8), ten_pow(0));
+
+    printf("\n");
+}
