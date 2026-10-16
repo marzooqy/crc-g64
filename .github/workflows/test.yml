@@ -9,4 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v5
     - name: Run test
-      run: python test/test.py
+      run: |
+        cd test
+        python test.py

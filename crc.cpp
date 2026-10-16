@@ -34,7 +34,7 @@ constexpr uint64_t swap(uint64_t x) {
 
 //Build the crc table.
 constexpr std::array<uint64_t, 256> crc_build_table() {
-    std::array<uint64_t, 256> table;
+    std::array<uint64_t, 256> table = {};
 
     const uint64_t poly = REFIN ? reflect(POLY, WIDTH) : (uint64_t)POLY << (64 - WIDTH);
 

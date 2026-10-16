@@ -6,7 +6,7 @@ failed = False
 
 for name, model in models.items():
     if model.width >= 8:
-        print(name)
+        print(name, flush=True)
 
         width = '-DWIDTH=' + str(model.width)
         poly = '-DPOLY=' + str(model.poly) + 'ULL'
@@ -19,13 +19,13 @@ for name, model in models.items():
         compile = ['g++', '-c', width, poly, init, refin, refout, xorout, check, '-O3', 'test.cpp', '../crc.cpp']
         link = ['g++', 'test.o', 'crc.o', '-o', 'test.exe']
 
-        print(' '.join(compile))
+        print(' '.join(compile), flush=True)
         subprocess.run(compile).check_returncode()
         time.sleep(0.1)
         subprocess.run(link).check_returncode()
         time.sleep(0.1)
 
-        exit_code = subprocess.run(['test.exe']).returncode
+        exit_code = subprocess.run(['./test.exe']).returncode
 
         if not failed and exit_code != 0:
             failed = True

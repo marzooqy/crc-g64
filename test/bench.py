@@ -23,6 +23,6 @@ for name, model in models.items():
         time.sleep(0.1)
         subprocess.run(link).check_returncode()
         time.sleep(0.1)
-        subprocess.run(['bench.exe']).check_returncode()
+        subprocess.run(['./bench.exe']).check_returncode()
 
         print(' | ', flush=True)
