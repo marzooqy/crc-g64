@@ -18,6 +18,6 @@ Performance varies depending on the CRC algorithm used. For more information, ch
 
 ## References
 
-1- [Fast CRCs (Extended Version)](https://arxiv.org/abs/1009.5949)
+1- [Fast CRCs](https://arxiv.org/abs/1009.5949)
 
 2- [chorba](https://github.com/samrussell/chorba)
