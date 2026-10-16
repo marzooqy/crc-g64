@@ -4,7 +4,7 @@
 #include <time.h>
 #include <math.h>
 
-#include "crc.h"
+#include "../crc.h"
 
 uint64_t ten_pow(int8_t n) {
     uint64_t i = 1;

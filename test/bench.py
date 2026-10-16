@@ -15,7 +15,7 @@ for name, model in models.items():
         refout = '-DREFOUT=' + str(model.refout).lower()
         xorout = '-DXOROUT=' + str(model.xorout) + 'ULL'
 
-        compile = ['g++', '-c', width, poly, init, refin, refout, xorout, '-O3', 'bench.cpp', 'crc.cpp']
+        compile = ['g++', '-c', width, poly, init, refin, refout, xorout, '-O3', 'bench.cpp', '../crc.cpp']
         link = ['g++', 'bench.o', 'crc.o', '-o', 'bench.exe']
 
         subprocess.run(compile).check_returncode()

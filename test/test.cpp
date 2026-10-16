@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "crc.h"
+#include "../crc.h"
 
 const char *test_data = "123456789";
 const uint64_t LEN = 2000;

@@ -15,7 +15,7 @@ for name, model in models.items():
     xorout = '-DXOROUT=' + str(model.xorout) + 'ULL'
     check = '-DCHECK=' + str(model.check) + 'ULL'
 
-    compile = ['g++', '-c', width, poly, init, refin, refout, xorout, check, 'test.cpp', 'crc.cpp']
+    compile = ['g++', '-c', width, poly, init, refin, refout, xorout, check, 'test.cpp', '../crc.cpp']
     link = ['g++', 'test.o', 'crc.o', '-o', 'test.exe']
 
     print(' '.join(compile))
