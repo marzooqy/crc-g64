@@ -20,21 +20,21 @@ int main() {
 
     //test crc_table
     value = crc_table(crc_init, (unsigned char*) test_data, 9);
-    printf("Table    %llx %llx ", value, CHECK);
+    printf("Table     %llx %llx ", value, CHECK);
     printf("%s\n", value == CHECK ? "true" : "false");
     success &= value == CHECK;
 
-    //len < 32
+    //small len
     value = crc_g64(crc_init, test_data2, 10);
     value2 = crc_table(crc_init, test_data2, 10);
-    printf("len < 32 %llx %llx ", value, value2);
+    printf("Small len %llx %llx ", value, value2);
     printf("%s\n", value == value2 ? "true" : "false");
     success &= value == value2;
 
-    //len > 32
+    //large len
     value = crc_g64(crc_init, test_data2, LEN);
     value2 = crc_table(crc_init, test_data2, LEN);
-    printf("len > 32 %llx %llx ", value, value2);
+    printf("Large len %llx %llx ", value, value2);
     printf("%s\n", value == value2 ? "true" : "false");
     success &= value == value2;
 
@@ -42,7 +42,7 @@ int main() {
     value = crc_g64(crc_init, test_data2, 1000);
     value = crc_g64(value, test_data2 + 1000, LEN - 1000);
     value2 = crc_table(crc_init, test_data2, LEN);
-    printf("Chunked  %llx %llx ", value, value2);
+    printf("Chunked   %llx %llx ", value, value2);
     printf("%s\n", value == value2 ? "true" : "false");
     success &= value == value2;
 
@@ -51,7 +51,7 @@ int main() {
         value = crc_g64(crc_init, test_data2 + i, LEN - i);
         value2 = crc_table(crc_init, test_data2 + i, LEN - i);
         if(value != value2) {
-            printf("Unaligned %llx %llx ", value, value2);
+            printf("Unaligned  %llx %llx ", value, value2);
             printf("%s\n", value == value2 ? "true" : "false");
         }
         success &= value == value2;

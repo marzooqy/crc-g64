@@ -1,10 +1,10 @@
-This repository contains an implementation of the unrolled generator CRC algorithm specified in [Chorba: A novel CRC32 implementation](https://arxiv.org/abs/2412.16398).
+This repository contains an implementation of the unrolled generator CRC algorithm specified in [Chorba: A novel CRC32 implementation](https://arxiv.org/abs/2412.16398). It performs better than most known CRC algorithms.
 
 ## Compilation
 
 The library requires defining the constants `WIDTH`, `POLY`, `INIT`, `REFIN`, `REFOUT`, and `XOROUT` according to the [CRC RevEng catalogue](https://reveng.sourceforge.io/crc-catalogue/all.htm).
 
-For CRC32, this would like:
+For CRC32, this would look like:
 
 ```
 g++ -c -DWIDTH=32 -DPOLY=79764919ULL -DINIT=4294967295ULL -DREFIN=true -DREFOUT=true -DXOROUT=4294967295ULL -03 crc.cpp

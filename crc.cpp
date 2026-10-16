@@ -131,7 +131,7 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
 
     //printf("Mem %llx\n", crc);
 
-    if(len >= 64 * 8 + 8) {
+    if(len >= WIDTH * 8 + 8) {
         const uint64_t poly = POLY;
         uint64_t const *ptr = (uint64_t const*)buf;
         uint64_t blocks[WIDTH];
