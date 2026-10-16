@@ -2,11 +2,12 @@ from models import models
 import subprocess
 import time
 
-print('| Model | 100 B | 1 KB | 10 KB | 100 KB | 1 MB | 10 MB | 100 MB |')
+print('| Model | Bits | Speed |')
+print('|---|---|---|')
 
 for name, model in models.items():
     if model.width >= 8:
-        print('| ' + name, end=' ', flush=True)
+        print(f'| {name} | {model.poly.bit_count()} |', end=' ', flush=True)
 
         width = '-DWIDTH=' + str(model.width)
         poly = '-DPOLY=' + str(model.poly) + 'ULL'
@@ -23,3 +24,5 @@ for name, model in models.items():
         subprocess.run(link).check_returncode()
         time.sleep(0.1)
         subprocess.run(['bench.exe']).check_returncode()
+
+        print(' | ', flush=True)

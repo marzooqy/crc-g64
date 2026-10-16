@@ -2,6 +2,17 @@
 #include <stdio.h>
 #include "crc.h"
 
+//Number of words to calculate in each iteration.
+#define N 8
+
+#if N > WIDTH
+#error N must be smaller than WIDTH.
+#endif
+
+#if N > 8
+#error Maximum supported value of N is 8.
+#endif
+
 //Reflect an integer x of width w.
 constexpr uint64_t reflect(uint64_t x, uint8_t w) {
     x = ((x >> 32) & 0xffffffff) | ((x << 32) & 0xffffffff00000000);
@@ -77,11 +88,9 @@ static uint64_t crc_final(uint64_t crc) {
 
 //Apply 8 zeros to crc.
 static uint64_t crc_zeros(uint64_t crc) {
-    //printf("Preword %llx\n", crc);
     for(uint8_t i = 0; i < 8; i++) {
         crc = (crc >> 8) ^ table[crc & 0xff];
     }
-    //printf("Processed %llx\n", crc);
     return crc;
 }
 
@@ -117,10 +126,8 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 #define sub(value, bit) (((POLY >> (bit)) & 1) ? (value) : 0)
 
 uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
-    const uint64_t N = 2;
-    //printf("Start %llx\n", crc);
     crc = crc_initial(crc);
-    //printf("Initial %llx\n", crc);
+
     //Align the buffer to a word boundary.
     uint64_t off = (uintptr_t)buf & 0x7;
     uint64_t rem = (8 - off) & 0x7;
@@ -130,14 +137,14 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
         len -= rem;
     }
 
-    //printf("Mem %llx\n", crc);
-
     if(len >= (WIDTH + N) * 8) {
         uint64_t const *ptr = (uint64_t const*)buf;
         uint64_t blocks[WIDTH + N];
         uint64_t *out = blocks;
         uint64_t *in = blocks + N;
+        uint8_t x;
 
+        //Load the first WIDTH + N words.
         for(uint8_t i = 0; i < WIDTH; i++) {
             in[i] = *ptr++;
         }
@@ -145,35 +152,527 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
 
         len -= WIDTH * 8;
 
+        //Reduce the buffer using P(x)^64, N bytes at a time.
         while(len >= N * 8) {
+            #if N >= 1
             out[0] = in[0];
+            #endif
+
+            #if N >= 2
             out[1] = in[1] ^ sub(out[0], WIDTH - 1);
+            #endif
 
-            for(uint8_t i = 0; i < WIDTH - N; i++) {
-                in[i] = in[i + N] ^ sub(out[0], WIDTH - i - 2) ^ sub(out[1], WIDTH - i - 1);
+            #if N >= 3
+            out[2] = in[2] ^ sub(out[0], WIDTH - 2) ^ sub(out[1], WIDTH - 1);
+            #endif
+
+            #if N >= 4
+            out[3] = in[3] ^ sub(out[0], WIDTH - 3) ^ sub(out[1], WIDTH - 2) ^ sub(out[2], WIDTH - 1);
+            #endif
+
+            #if N >= 5
+            out[4] = in[4] ^ sub(out[0], WIDTH - 4) ^ sub(out[1], WIDTH - 3) ^ sub(out[2], WIDTH - 2) ^ sub(out[3], WIDTH - 1);
+            #endif
+
+            #if N >= 6
+            out[5] = in[5] ^ sub(out[0], WIDTH - 5) ^ sub(out[1], WIDTH - 4) ^ sub(out[2], WIDTH - 3) ^ sub(out[3], WIDTH - 2) ^ sub(out[4], WIDTH - 1);
+            #endif
+
+            #if N >= 7
+            out[6] = in[6] ^ sub(out[0], WIDTH - 6) ^ sub(out[1], WIDTH - 5) ^ sub(out[2], WIDTH - 4) ^ sub(out[3], WIDTH - 3) ^ sub(out[4], WIDTH - 2) ^ sub(out[5], WIDTH - 1);
+            #endif
+
+            #if N >= 8
+            out[7] = in[7] ^ sub(out[0], WIDTH - 7) ^ sub(out[1], WIDTH - 6) ^ sub(out[2], WIDTH - 5) ^ sub(out[3], WIDTH - 4) ^ sub(out[4], WIDTH - 3) ^ sub(out[5], WIDTH - 2) ^ sub(out[6], WIDTH - 1);
+            #endif
+
+            #if WIDTH - N >= 1
+            x = 0;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
             }
+            #endif
+            #if WIDTH - N >= 2
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 3
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 4
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 5
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 6
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 7
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 8
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 9
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 10
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 11
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 12
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 13
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 14
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 15
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 16
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 17
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 18
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 19
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 20
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 21
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 22
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 23
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 24
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 25
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 26
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 27
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 28
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 29
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 30
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 31
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 32
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 33
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 34
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 35
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 36
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 37
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 38
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 39
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 40
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 41
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 42
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 43
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 44
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 45
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 46
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 47
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 48
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 49
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 50
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 51
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 52
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 53
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 54
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 55
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 56
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 57
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 58
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 59
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 60
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 61
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 62
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
+            #if WIDTH - N >= 63
+            x += 1;
+            in[x] = in[x + N];
+            for(int8_t n = 0; n < N; n++) {
+                in[x] ^= sub(out[n], WIDTH - x - (N - n));
+            }
+            #endif
 
-            in[WIDTH - 2] = (*ptr++) ^ sub(out[0], 0) ^ sub(out[1], 1);
-            in[WIDTH - 1] = (*ptr++) ^ sub(out[1], 0);
+            #if N >= 8
+            in[WIDTH - 8] = (*ptr++) ^ sub(out[N - 8], 0) ^ sub(out[N - 7], 1) ^ sub(out[N - 6], 2) ^ sub(out[N - 5], 3) ^ sub(out[N - 4], 4) ^ sub(out[N - 3], 5) ^ sub(out[N - 2], 6) ^ sub(out[N - 1], 7);
+            #endif
+
+            #if N >= 7
+            in[WIDTH - 7] = (*ptr++) ^ sub(out[N - 7], 0) ^ sub(out[N - 6], 1) ^ sub(out[N - 5], 2) ^ sub(out[N - 4], 3) ^ sub(out[N - 3], 4) ^ sub(out[N - 2], 5) ^ sub(out[N - 1], 6);
+            #endif
+
+            #if N >= 6
+            in[WIDTH - 6] = (*ptr++) ^ sub(out[N - 6], 0) ^ sub(out[N - 5], 1) ^ sub(out[N - 4], 2) ^ sub(out[N - 3], 3) ^ sub(out[N - 2], 4) ^ sub(out[N - 1], 5);
+            #endif
+
+            #if N >= 5
+            in[WIDTH - 5] = (*ptr++) ^ sub(out[N - 5], 0) ^ sub(out[N - 4], 1) ^ sub(out[N - 3], 2) ^ sub(out[N - 2], 3) ^ sub(out[N - 1], 4);
+            #endif
+
+            #if N >= 4
+            in[WIDTH - 4] = (*ptr++) ^ sub(out[N - 4], 0) ^ sub(out[N - 3], 1) ^ sub(out[N - 2], 2) ^ sub(out[N - 1], 3);
+            #endif
+
+            #if N >= 3
+            in[WIDTH - 3] = (*ptr++) ^ sub(out[N - 3], 0) ^ sub(out[N - 2], 1) ^ sub(out[N - 1], 2);
+            #endif
+
+            #if N >= 2
+            in[WIDTH - 2] = (*ptr++) ^ sub(out[N - 2], 0) ^ sub(out[N - 1], 1);
+            #endif
+
+            #if N >= 1
+            in[WIDTH - 1] = (*ptr++) ^ sub(out[N - 1], 0);
+            #endif
 
             len -= N * 8;
         }
 
+        //Find the CRC of the reduced buffer.
         crc = crc_zeros(in[0]);
         for(uint8_t i = 1; i < WIDTH; i++) {
             crc = crc_zeros(crc ^ in[i]);
-            //printf("Words %llx\n", crc);
         }
-
-        //printf("End Words %llx\n", crc);
 
         buf = (unsigned char const*)ptr;
     }
 
     //Calculate the remaining bytes.
     crc = crc_bytes(crc, buf, len);
-    //printf("Bytes %llx\n", crc);
-    crc = crc_final(crc);
-    //printf("Final %llx\n", crc);
-    return crc;
+    return crc_final(crc);
 }
