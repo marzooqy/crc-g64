@@ -1,5 +1,4 @@
 #include <array>
-#include <stdio.h>
 #include "crc.h"
 
 //Number of words to calculate in each iteration.
