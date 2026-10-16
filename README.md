@@ -7,7 +7,7 @@ The library requires defining the constants `WIDTH`, `POLY`, `INIT`, `REFIN`, `R
 For CRC32, this would look like:
 
 ```
-g++ -c -DWIDTH=32 -DPOLY=79764919ULL -DINIT=4294967295ULL -DREFIN=true -DREFOUT=true -DXOROUT=4294967295ULL -03 crc.cpp
+g++ -c -DWIDTH=32 -DPOLY=0x04c11db7ULL -DINIT=0xffffffffULL -DREFIN=true -DREFOUT=true -DXOROUT=0xffffffffULL -O3 crc.cpp
 ```
 
 For CRC7 and smaller, the constant N in crc.c has to be set less than or equal to the CRC width.
