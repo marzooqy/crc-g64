@@ -152,7 +152,7 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
 
         len -= WIDTH * 8;
 
-        //Reduce the buffer using P(x)^64, N bytes at a time.
+        //Reduce the buffer using P(x)^64, N words at a time.
         while(len >= N * 8) {
             #if N >= 1
             out[0] = in[0];

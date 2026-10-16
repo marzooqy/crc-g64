@@ -2,16 +2,16 @@
 
 The performance depends on two factors:
 
-1- The width of the CRC. Smaller widths mean higher performance.
+- The width of the CRC. Smaller widths mean higher performance.
 
-2- The number of one bits that the polynomial has. Fewer bits mean higher speeds.
+- The number of one bits that the polynomial has. Fewer bits mean higher speeds.
 
 CRC64 is relatively slow as it requires a large number of operations to compute. In this case, an algorithm like [crc-braid](https://github.com/marzooqy/crc-braid) may be more optimal.
 
 Tested on a 12th generation Intel i7 processor.
 
 | Model | Bits | Speed (GiB/s) |
-|---|---|---|
+|---|:-:|:-:|
 | CRC3-GSM | 2 | 37.25 |
 | CRC3-ROHC | 2 | 37.25 |
 | CRC4-G-704 | 2 | 45.85 |
