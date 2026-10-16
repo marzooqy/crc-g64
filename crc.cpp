@@ -157,31 +157,24 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
             #if N >= 1
             out[0] = in[0];
             #endif
-
             #if N >= 2
             out[1] = in[1] ^ sub(out[0], WIDTH - 1);
             #endif
-
             #if N >= 3
             out[2] = in[2] ^ sub(out[0], WIDTH - 2) ^ sub(out[1], WIDTH - 1);
             #endif
-
             #if N >= 4
             out[3] = in[3] ^ sub(out[0], WIDTH - 3) ^ sub(out[1], WIDTH - 2) ^ sub(out[2], WIDTH - 1);
             #endif
-
             #if N >= 5
             out[4] = in[4] ^ sub(out[0], WIDTH - 4) ^ sub(out[1], WIDTH - 3) ^ sub(out[2], WIDTH - 2) ^ sub(out[3], WIDTH - 1);
             #endif
-
             #if N >= 6
             out[5] = in[5] ^ sub(out[0], WIDTH - 5) ^ sub(out[1], WIDTH - 4) ^ sub(out[2], WIDTH - 3) ^ sub(out[3], WIDTH - 2) ^ sub(out[4], WIDTH - 1);
             #endif
-
             #if N >= 7
             out[6] = in[6] ^ sub(out[0], WIDTH - 6) ^ sub(out[1], WIDTH - 5) ^ sub(out[2], WIDTH - 4) ^ sub(out[3], WIDTH - 3) ^ sub(out[4], WIDTH - 2) ^ sub(out[5], WIDTH - 1);
             #endif
-
             #if N >= 8
             out[7] = in[7] ^ sub(out[0], WIDTH - 7) ^ sub(out[1], WIDTH - 6) ^ sub(out[2], WIDTH - 5) ^ sub(out[3], WIDTH - 4) ^ sub(out[4], WIDTH - 3) ^ sub(out[5], WIDTH - 2) ^ sub(out[6], WIDTH - 1);
             #endif
@@ -631,31 +624,24 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
             #if N >= 8
             in[WIDTH - 8] = (*ptr++) ^ sub(out[N - 8], 0) ^ sub(out[N - 7], 1) ^ sub(out[N - 6], 2) ^ sub(out[N - 5], 3) ^ sub(out[N - 4], 4) ^ sub(out[N - 3], 5) ^ sub(out[N - 2], 6) ^ sub(out[N - 1], 7);
             #endif
-
             #if N >= 7
             in[WIDTH - 7] = (*ptr++) ^ sub(out[N - 7], 0) ^ sub(out[N - 6], 1) ^ sub(out[N - 5], 2) ^ sub(out[N - 4], 3) ^ sub(out[N - 3], 4) ^ sub(out[N - 2], 5) ^ sub(out[N - 1], 6);
             #endif
-
             #if N >= 6
             in[WIDTH - 6] = (*ptr++) ^ sub(out[N - 6], 0) ^ sub(out[N - 5], 1) ^ sub(out[N - 4], 2) ^ sub(out[N - 3], 3) ^ sub(out[N - 2], 4) ^ sub(out[N - 1], 5);
             #endif
-
             #if N >= 5
             in[WIDTH - 5] = (*ptr++) ^ sub(out[N - 5], 0) ^ sub(out[N - 4], 1) ^ sub(out[N - 3], 2) ^ sub(out[N - 2], 3) ^ sub(out[N - 1], 4);
             #endif
-
             #if N >= 4
             in[WIDTH - 4] = (*ptr++) ^ sub(out[N - 4], 0) ^ sub(out[N - 3], 1) ^ sub(out[N - 2], 2) ^ sub(out[N - 1], 3);
             #endif
-
             #if N >= 3
             in[WIDTH - 3] = (*ptr++) ^ sub(out[N - 3], 0) ^ sub(out[N - 2], 1) ^ sub(out[N - 1], 2);
             #endif
-
             #if N >= 2
             in[WIDTH - 2] = (*ptr++) ^ sub(out[N - 2], 0) ^ sub(out[N - 1], 1);
             #endif
-
             #if N >= 1
             in[WIDTH - 1] = (*ptr++) ^ sub(out[N - 1], 0);
             #endif
