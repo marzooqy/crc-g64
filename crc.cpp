@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include "crc.h"
 
-//Convert a boolean into an AND mask.
-#define AND_MASK(c) (-(uint64_t)(c))
-
 //Reflect an integer x of width w.
 constexpr uint64_t reflect(uint64_t x, uint8_t w) {
     x = ((x >> 32) & 0xffffffff) | ((x << 32) & 0xffffffff00000000);
@@ -35,12 +32,12 @@ constexpr std::array<uint64_t, 256> crc_build_table() {
 
         if(REFIN) {
             for(uint8_t j = 0; j < 8; j++) {
-                crc = (crc >> 1) ^ (poly & AND_MASK(crc & 1));
+                crc = (crc >> 1) ^ (crc & 1 ? poly : 0);
             }
         } else {
             crc <<= 56;
             for(uint8_t j = 0; j < 8; j++) {
-                crc = (crc << 1) ^ (poly & AND_MASK(crc >> 63));
+                crc = (crc << 1) ^ (crc >> 63 ? poly : 0);
             }
             crc = swap(crc);
         }
@@ -116,7 +113,11 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
    w is the width of the CRC.
 */
 
+//Returns either the value to be subtracted or zero depending on the bit of POLY.
+#define sub(value, bit) (((POLY >> (bit)) & 1) ? (value) : 0)
+
 uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
+    const uint64_t N = 2;
     //printf("Start %llx\n", crc);
     crc = crc_initial(crc);
     //printf("Initial %llx\n", crc);
@@ -131,36 +132,36 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
 
     //printf("Mem %llx\n", crc);
 
-    if(len >= WIDTH * 8 + 8) {
-        const uint64_t poly = POLY;
+    if(len >= (WIDTH + N) * 8) {
         uint64_t const *ptr = (uint64_t const*)buf;
-        uint64_t blocks[WIDTH];
-        uint64_t out;
+        uint64_t blocks[WIDTH + N];
+        uint64_t *out = blocks;
+        uint64_t *in = blocks + N;
 
         for(uint8_t i = 0; i < WIDTH; i++) {
-            blocks[i] = *ptr++;
+            in[i] = *ptr++;
         }
-        blocks[0] ^= crc;
+        in[0] ^= crc;
 
         len -= WIDTH * 8;
 
-        while(len >= 8) {
-            out = blocks[0];
+        while(len >= N * 8) {
+            out[0] = in[0];
+            out[1] = in[1] ^ sub(out[0], WIDTH - 1);
 
-            for(uint8_t i = 0; i < WIDTH - 1; i++) {
-                blocks[i] = blocks[i + 1] ^ (((poly >> (WIDTH - i - 1)) & 1) ? out : 0);
+            for(uint8_t i = 0; i < WIDTH - N; i++) {
+                in[i] = in[i + N] ^ sub(out[0], WIDTH - i - 2) ^ sub(out[1], WIDTH - i - 1);
             }
 
-            for(uint8_t i = WIDTH - 1; i < WIDTH; i++) {
-                blocks[i] = (*ptr++) ^ (((poly >> (WIDTH - i - 1)) & 1) ? out : 0);
-            }
+            in[WIDTH - 2] = (*ptr++) ^ sub(out[0], 0) ^ sub(out[1], 1);
+            in[WIDTH - 1] = (*ptr++) ^ sub(out[1], 0);
 
-            len -= 8;
+            len -= N * 8;
         }
 
-        crc = crc_zeros(blocks[0]);
+        crc = crc_zeros(in[0]);
         for(uint8_t i = 1; i < WIDTH; i++) {
-            crc = crc_zeros(crc ^ blocks[i]);
+            crc = crc_zeros(crc ^ in[i]);
             //printf("Words %llx\n", crc);
         }
 
