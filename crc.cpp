@@ -123,15 +123,6 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 //Returns either the value to be subtracted or zero depending on the bit of POLY.
 #define sub(value, bit) (((POLY >> (bit)) & 1) ? (value) : 0)
 
-//Perform all N subtractions for the word located in i.
-uint64_t subs(uint64_t *in, uint64_t *out, uint8_t i) {
-    uint64_t result = in[i + N];
-    for(uint8_t n = 0; n < N; n++) {
-        result ^= sub(out[n], WIDTH - i - (N - n));
-    }
-    return result;
-}
-
 #define REPEAT_63(x) x x x x x x x x x x x x x x x x \
                      x x x x x x x x x x x x x x x x \
                      x x x x x x x x x x x x x x x x \
@@ -193,7 +184,8 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
 
             REPEAT_63(
                 if(x < WIDTH - N) {
-                    in[x] = subs(in, out, x);
+                    in[x] = in[x + N] ^ sub(out[0], WIDTH - x - 8) ^ sub(out[1], WIDTH - x - 7) ^ sub(out[2], WIDTH - x - 6) ^ sub(out[3], WIDTH - x - 5)
+                            ^ sub(out[4], WIDTH - x - 4) ^ sub(out[5], WIDTH - x - 3) ^ sub(out[6], WIDTH - x - 2) ^ sub(out[7], WIDTH - x - 1);
                     x++;
                 }
             )
