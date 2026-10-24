@@ -8,8 +8,6 @@ The performance depends on two factors:
 
 CRC64 is relatively slow as it requires a large number of operations to compute. In this case, an algorithm like [crc-braid](https://github.com/marzooqy/crc-braid) may be more optimal.
 
-The constant N determines how many words should be reduced in each iteration of the loop. Larger values can improve the performance for polynomials with fewer bits.
-
 Tested on a 12th generation Intel i7 processor.
 
 | Model | Bits | Speed (GiB/s) |

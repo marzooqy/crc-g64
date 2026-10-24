@@ -104,7 +104,7 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 }
 
 //Manually unrolled loop.
-//Different versions of REPEAT are used depending on the values of WIDTH and N to reduce compile-time.
+//Different versions of REPEAT are used depending on the values of WIDTH and N to reduce compile time.
 #define REPEAT_8(x)  x x x x x x x x
 #define REPEAT_16(x) REPEAT_8(x) REPEAT_8(x)
 #define REPEAT_32(x) REPEAT_16(x) REPEAT_16(x)
@@ -166,48 +166,48 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
         uint64_t const *ptr = (uint64_t const*)buf;
         uint64_t blocks[WIDTH + N];
         uint64_t *in = blocks + N;
-        int8_t w, n, i;
+        int64_t i, n;
 
         //Load the first WIDTH words.
-        for(uint8_t i = 0; i < WIDTH; i++) {
-            in[i] = ptr[i];
+        for(i = 0; i < WIDTH; i++) {
+            in[i] = *ptr++;
         }
         in[0] ^= crc;
 
-        ptr += WIDTH;
         len -= WIDTH * 8;
 
         //Reduce the buffer using P(x)^64, N words at a time.
         while(len >= N * 8) {
-            FOR_N(w = 0, w < N, w++,
-                blocks[w] = blocks[w + N];
-                FOR_N(n = 0, n < w, n++,
-                    blocks[w] ^= sub(blocks[n], WIDTH - (w - n));
+            //Process the N outgoing blocks.
+            FOR_N(i = 0, i < N, i++,
+                blocks[i] = blocks[i + N];
+                FOR_N(n = 0, n < i, n++,
+                    blocks[i] ^= sub(blocks[n], WIDTH - i + n);
                 )
             )
 
-            FOR_W(w, w < WIDTH, w++,
-                blocks[w] = blocks[w + N];
+            //Process the WIDTH - N blocks inside the register.
+            FOR_W(i, i < WIDTH, i++,
+                blocks[i] = blocks[i + N];
                 FOR_N(n = 0, n < N, n++,
-                    blocks[w] ^= sub(blocks[n], WIDTH - (w - n));
+                    blocks[i] ^= sub(blocks[n], WIDTH - i + n);
                 )
             )
 
-            FOR_N(w, w < WIDTH + N, w++,
-                i = w - WIDTH;
-                blocks[w] = ptr[i];
-                FOR_N(n = i, n < N, n++,
-                    blocks[w] ^= sub(blocks[n], n - i);
+            //Process the N incoming blocks.
+            FOR_N(i, i < WIDTH + N, i++,
+                blocks[i] = *ptr++;
+                FOR_N(n = i - WIDTH, n < N, n++,
+                    blocks[i] ^= sub(blocks[n], WIDTH - i + n);
                 )
             )
 
-            ptr += N;
             len -= N * 8;
         }
 
         //Find the CRC of the reduced buffer.
         crc = crc_zeros(in[0]);
-        for(uint8_t i = 1; i < WIDTH; i++) {
+        for(i = 1; i < WIDTH; i++) {
             crc = crc_zeros(crc ^ in[i]);
         }
 
