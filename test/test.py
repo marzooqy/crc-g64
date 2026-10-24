@@ -4,8 +4,16 @@ import time
 
 failed = False
 
+with open('../crc.cpp', 'r') as file:
+    code = file.read()
+
+start = code.find('#define N ') + 10
+end = start + code[start:].find('\n')
+
+N = int(code[start:end])
+
 for name, model in models.items():
-    if model.width >= 8:
+    if model.width >= N:
         print(name, flush=True)
 
         width = '-DWIDTH=' + str(model.width)

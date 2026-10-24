@@ -8,10 +8,6 @@
 #error N must be smaller than WIDTH.
 #endif
 
-#if N > 8
-#error Maximum supported value of N is 8.
-#endif
-
 //Reflect an integer x of width w.
 constexpr uint64_t reflect(uint64_t x, uint8_t w) {
     x = ((x >> 32) & 0xffffffff) | ((x << 32) & 0xffffffff00000000);
@@ -107,6 +103,37 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
     return crc_final(crc);
 }
 
+//Manually unrolled loop.
+//Different versions of REPEAT are used depending on the values of WIDTH and N to reduce compile-time.
+#define REPEAT_8(x)  x x x x x x x x
+#define REPEAT_16(x) REPEAT_8(x) REPEAT_8(x)
+#define REPEAT_32(x) REPEAT_16(x) REPEAT_16(x)
+#define REPEAT_64(x) REPEAT_32(x) REPEAT_32(x)
+
+#if WIDTH <= 8
+#define REPEAT_W(x) REPEAT_8(x)
+#elif WIDTH <= 16
+#define REPEAT_W(x) REPEAT_16(x)
+#elif WIDTH <= 32
+#define REPEAT_W(x) REPEAT_32(x)
+#else
+#define REPEAT_W(x) REPEAT_64(x)
+#endif
+
+#if N <= 8
+#define REPEAT_N(x) REPEAT_8(x)
+#elif N <= 16
+#define REPEAT_N(x) REPEAT_16(x)
+#elif N <= 32
+#define REPEAT_N(x) REPEAT_32(x)
+#else
+#define REPEAT_N(x) REPEAT_64(x)
+#endif
+
+//Redundant terms should be eliminated during compile-time if the result of test can be predicted.
+#define FOR_W(init, test, update, expr) init; REPEAT_W(if(test) {expr; update;})
+#define FOR_N(init, test, update, expr) init; REPEAT_N(if(test) {expr; update;})
+
 //Calculate the CRC using the G64 algorithm.
 
 /* Math:
@@ -123,11 +150,6 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 //Returns either the value to be subtracted or zero depending on the bit of POLY.
 #define sub(value, bit) (((POLY >> (bit)) & 1) ? (value) : 0)
 
-#define REPEAT_63(x) x x x x x x x x x x x x x x x x \
-                     x x x x x x x x x x x x x x x x \
-                     x x x x x x x x x x x x x x x x \
-                     x x x x x x x x x x x x x x x
-
 uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
     crc = crc_initial(crc);
 
@@ -143,76 +165,43 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
     if(len >= (WIDTH + N) * 8) {
         uint64_t const *ptr = (uint64_t const*)buf;
         uint64_t blocks[WIDTH + N];
-        uint64_t *out = blocks;
         uint64_t *in = blocks + N;
-        uint8_t x;
+        int8_t w, n, i;
 
-        //Load the first WIDTH + N words.
+        //Load the first WIDTH words.
         for(uint8_t i = 0; i < WIDTH; i++) {
-            in[i] = *ptr++;
+            in[i] = ptr[i];
         }
         in[0] ^= crc;
 
+        ptr += WIDTH;
         len -= WIDTH * 8;
 
         //Reduce the buffer using P(x)^64, N words at a time.
         while(len >= N * 8) {
-            out[0] = in[0];
-            #if N >= 2
-            out[1] = in[1] ^ sub(out[0], WIDTH - 1);
-            #endif
-            #if N >= 3
-            out[2] = in[2] ^ sub(out[0], WIDTH - 2) ^ sub(out[1], WIDTH - 1);
-            #endif
-            #if N >= 4
-            out[3] = in[3] ^ sub(out[0], WIDTH - 3) ^ sub(out[1], WIDTH - 2) ^ sub(out[2], WIDTH - 1);
-            #endif
-            #if N >= 5
-            out[4] = in[4] ^ sub(out[0], WIDTH - 4) ^ sub(out[1], WIDTH - 3) ^ sub(out[2], WIDTH - 2) ^ sub(out[3], WIDTH - 1);
-            #endif
-            #if N >= 6
-            out[5] = in[5] ^ sub(out[0], WIDTH - 5) ^ sub(out[1], WIDTH - 4) ^ sub(out[2], WIDTH - 3) ^ sub(out[3], WIDTH - 2) ^ sub(out[4], WIDTH - 1);
-            #endif
-            #if N >= 7
-            out[6] = in[6] ^ sub(out[0], WIDTH - 6) ^ sub(out[1], WIDTH - 5) ^ sub(out[2], WIDTH - 4) ^ sub(out[3], WIDTH - 3) ^ sub(out[4], WIDTH - 2) ^ sub(out[5], WIDTH - 1);
-            #endif
-            #if N >= 8
-            out[7] = in[7] ^ sub(out[0], WIDTH - 7) ^ sub(out[1], WIDTH - 6) ^ sub(out[2], WIDTH - 5) ^ sub(out[3], WIDTH - 4) ^ sub(out[4], WIDTH - 3) ^ sub(out[5], WIDTH - 2) ^ sub(out[6], WIDTH - 1);
-            #endif
-
-            x = 0;
-
-            REPEAT_63(
-                if(x < WIDTH - N) {
-                    in[x] = in[x + N] ^ sub(out[0], WIDTH - x - 8) ^ sub(out[1], WIDTH - x - 7) ^ sub(out[2], WIDTH - x - 6) ^ sub(out[3], WIDTH - x - 5)
-                            ^ sub(out[4], WIDTH - x - 4) ^ sub(out[5], WIDTH - x - 3) ^ sub(out[6], WIDTH - x - 2) ^ sub(out[7], WIDTH - x - 1);
-                    x++;
-                }
+            FOR_N(w = 0, w < N, w++,
+                blocks[w] = blocks[w + N];
+                FOR_N(n = 0, n < w, n++,
+                    blocks[w] ^= sub(blocks[n], WIDTH - (w - n));
+                )
             )
 
-            #if N >= 8
-            in[WIDTH - 8] = (*ptr++) ^ sub(out[N - 8], 0) ^ sub(out[N - 7], 1) ^ sub(out[N - 6], 2) ^ sub(out[N - 5], 3) ^ sub(out[N - 4], 4) ^ sub(out[N - 3], 5) ^ sub(out[N - 2], 6) ^ sub(out[N - 1], 7);
-            #endif
-            #if N >= 7
-            in[WIDTH - 7] = (*ptr++) ^ sub(out[N - 7], 0) ^ sub(out[N - 6], 1) ^ sub(out[N - 5], 2) ^ sub(out[N - 4], 3) ^ sub(out[N - 3], 4) ^ sub(out[N - 2], 5) ^ sub(out[N - 1], 6);
-            #endif
-            #if N >= 6
-            in[WIDTH - 6] = (*ptr++) ^ sub(out[N - 6], 0) ^ sub(out[N - 5], 1) ^ sub(out[N - 4], 2) ^ sub(out[N - 3], 3) ^ sub(out[N - 2], 4) ^ sub(out[N - 1], 5);
-            #endif
-            #if N >= 5
-            in[WIDTH - 5] = (*ptr++) ^ sub(out[N - 5], 0) ^ sub(out[N - 4], 1) ^ sub(out[N - 3], 2) ^ sub(out[N - 2], 3) ^ sub(out[N - 1], 4);
-            #endif
-            #if N >= 4
-            in[WIDTH - 4] = (*ptr++) ^ sub(out[N - 4], 0) ^ sub(out[N - 3], 1) ^ sub(out[N - 2], 2) ^ sub(out[N - 1], 3);
-            #endif
-            #if N >= 3
-            in[WIDTH - 3] = (*ptr++) ^ sub(out[N - 3], 0) ^ sub(out[N - 2], 1) ^ sub(out[N - 1], 2);
-            #endif
-            #if N >= 2
-            in[WIDTH - 2] = (*ptr++) ^ sub(out[N - 2], 0) ^ sub(out[N - 1], 1);
-            #endif
-            in[WIDTH - 1] = (*ptr++) ^ sub(out[N - 1], 0);
+            FOR_W(w, w < WIDTH, w++,
+                blocks[w] = blocks[w + N];
+                FOR_N(n = 0, n < N, n++,
+                    blocks[w] ^= sub(blocks[n], WIDTH - (w - n));
+                )
+            )
 
+            FOR_N(w, w < WIDTH + N, w++,
+                i = w - WIDTH;
+                blocks[w] = ptr[i];
+                FOR_N(n = i, n < N, n++,
+                    blocks[w] ^= sub(blocks[n], n - i);
+                )
+            )
+
+            ptr += N;
             len -= N * 8;
         }
 

@@ -2,11 +2,19 @@ from models import models
 import subprocess
 import time
 
+with open('../crc.cpp', 'r') as file:
+    code = file.read()
+
+start = code.find('#define N ') + 10
+end = start + code[start:].find('\n')
+
+N = int(code[start:end])
+
 print('| Model | Bits | Speed |')
 print('|---|---|---|')
 
 for name, model in models.items():
-    if model.width >= 8:
+    if model.width >= N:
         print(f'| {name} | {model.poly.bit_count()} |', end=' ', flush=True)
 
         width = '-DWIDTH=' + str(model.width)

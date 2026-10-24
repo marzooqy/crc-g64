@@ -6,7 +6,7 @@
 #include "../crc.h"
 
 const char *test_data = "123456789";
-const uint64_t LEN = 2000;
+const uint64_t LEN = 10000;
 
 int main() {
     uint64_t value, value2;
