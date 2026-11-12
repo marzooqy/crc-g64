@@ -104,21 +104,11 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 }
 
 //Manually unrolled loop.
-//Different versions of REPEAT are used depending on the values of WIDTH and N to reduce compile time.
+//Different versions of REPEAT are used depending on the value of N to reduce compile time.
 #define REPEAT_8(x)  x x x x x x x x
 #define REPEAT_16(x) REPEAT_8(x) REPEAT_8(x)
 #define REPEAT_32(x) REPEAT_16(x) REPEAT_16(x)
 #define REPEAT_64(x) REPEAT_32(x) REPEAT_32(x)
-
-#if WIDTH <= 8
-#define REPEAT_W(x) REPEAT_8(x)
-#elif WIDTH <= 16
-#define REPEAT_W(x) REPEAT_16(x)
-#elif WIDTH <= 32
-#define REPEAT_W(x) REPEAT_32(x)
-#else
-#define REPEAT_W(x) REPEAT_64(x)
-#endif
 
 #if N <= 8
 #define REPEAT_N(x) REPEAT_8(x)
@@ -131,7 +121,7 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 #endif
 
 //Redundant terms should be eliminated during compile-time if the result of test can be predicted.
-#define FOR_W(init, test, update, expr) init; REPEAT_W(if(test) {expr; update;})
+#define FOR_64(init, test, update, expr) init; REPEAT_64(if(test) {expr; update;})
 #define FOR_N(init, test, update, expr) init; REPEAT_N(if(test) {expr; update;})
 
 //Calculate the CRC using the G64 algorithm.
@@ -187,7 +177,7 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
             )
 
             //Process the WIDTH - N blocks inside the register.
-            FOR_W(i, i < WIDTH, i++,
+            FOR_64(i, i < WIDTH, i++,
                 blocks[i] = blocks[i + N];
                 FOR_N(n = 0, n < N, n++,
                     blocks[i] ^= sub(blocks[n], WIDTH - i + n);
