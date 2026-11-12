@@ -8,6 +8,10 @@
 #error N must be smaller than WIDTH.
 #endif
 
+#if N > 8
+#error N must be less than or equal to 8.
+#endif
+
 //Reflect an integer x of width w.
 constexpr uint64_t reflect(uint64_t x, uint8_t w) {
     x = ((x >> 32) & 0xffffffff) | ((x << 32) & 0xffffffff00000000);
@@ -104,25 +108,15 @@ uint64_t crc_table(uint64_t crc, unsigned char const *buf, uint64_t len) {
 }
 
 //Manually unrolled loop.
-//Different versions of REPEAT are used depending on the value of N to reduce compile time.
-#define REPEAT_8(x)  x x x x x x x x
-#define REPEAT_16(x) REPEAT_8(x) REPEAT_8(x)
-#define REPEAT_32(x) REPEAT_16(x) REPEAT_16(x)
-#define REPEAT_64(x) REPEAT_32(x) REPEAT_32(x)
-
-#if N <= 8
-#define REPEAT_N(x) REPEAT_8(x)
-#elif N <= 16
-#define REPEAT_N(x) REPEAT_16(x)
-#elif N <= 32
-#define REPEAT_N(x) REPEAT_32(x)
-#else
-#define REPEAT_N(x) REPEAT_64(x)
-#endif
-
 //Redundant terms should be eliminated during compile-time if the result of test can be predicted.
+#define REPEAT_8(x)  x x x x x x x x
+#define REPEAT_64(x) x x x x x x x x x x x x x x x x \
+                     x x x x x x x x x x x x x x x x \
+                     x x x x x x x x x x x x x x x x \
+                     x x x x x x x x x x x x x x x x
+
+#define FOR_8(init, test, update, expr) init; REPEAT_8(if(test) {expr; update;})
 #define FOR_64(init, test, update, expr) init; REPEAT_64(if(test) {expr; update;})
-#define FOR_N(init, test, update, expr) init; REPEAT_N(if(test) {expr; update;})
 
 //Calculate the CRC using the G64 algorithm.
 
@@ -169,9 +163,9 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
         //Reduce the buffer using P(x)^64, N words at a time.
         while(len >= N * 8) {
             //Process the N outgoing blocks.
-            FOR_N(i = 0, i < N, i++,
+            FOR_8(i = 0, i < N, i++,
                 blocks[i] = blocks[i + N];
-                FOR_N(n = 0, n < i, n++,
+                FOR_8(n = 0, n < i, n++,
                     blocks[i] ^= sub(blocks[n], WIDTH - i + n);
                 )
             )
@@ -179,15 +173,15 @@ uint64_t crc_g64(uint64_t crc, unsigned char const *buf, uint64_t len) {
             //Process the WIDTH - N blocks inside the register.
             FOR_64(i, i < WIDTH, i++,
                 blocks[i] = blocks[i + N];
-                FOR_N(n = 0, n < N, n++,
+                FOR_8(n = 0, n < N, n++,
                     blocks[i] ^= sub(blocks[n], WIDTH - i + n);
                 )
             )
 
             //Process the N incoming blocks.
-            FOR_N(i, i < WIDTH + N, i++,
+            FOR_8(i, i < WIDTH + N, i++,
                 blocks[i] = *ptr++;
-                FOR_N(n = i - WIDTH, n < N, n++,
+                FOR_8(n = i - WIDTH, n < N, n++,
                     blocks[i] ^= sub(blocks[n], WIDTH - i + n);
                 )
             )
